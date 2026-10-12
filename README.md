@@ -165,7 +165,7 @@ rule and the missing-data policy.
 | `pytest` | **191 tests passed**, 96% statement coverage (`2835` statements, `111` missed) |
 | `vitest` | **55 tests passed** across 6 files, including a live integration test against a running API |
 | `tsc --noEmit` | clean |
-| `vite build` | 608 modules, 797.40 kB JS (gzip 265.92 kB), 19.49 kB CSS |
+| `vite build` | 608 modules, 796.96 kB JS (gzip 265.75 kB), 19.42 kB CSS |
 | Agent evaluation | **22/22 cases** across `normal`, `missing_data`, `contradictory`, `zero_denominator`, `unit_fx`, `injection`, `api_failure` |
 | Pre-export verification | V-01 111/111 citations resolved · V-02 every cited number reproduced · V-04 no uncited figure · V-05 synthetic declared · V-06 as-of stated · V-07 **warn** (fixture market data, by design without a key) · V-08 no undefined metric shown as a value |
 | End-to-end | `docs/samples/report-sample.md` and `report-sample.html` are real outputs of the running service |

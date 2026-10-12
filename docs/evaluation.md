@@ -44,7 +44,7 @@ Coverage: **96%** of statements (`2835` statements, `111` missed).
 cd apps/web
 npm run typecheck     # tsc --noEmit, clean
 npm test              # 6 files, 55 tests, all passing
-npm run build         # 608 modules, dist/assets/index-*.js 797.40 kB (gzip 265.92 kB), CSS 19.49 kB (gzip 4.40 kB)
+npm run build         # 608 modules, dist/assets/index-*.js 796.96 kB (gzip 265.75 kB), CSS 19.42 kB (gzip 4.39 kB)
 ```
 
 | Suite | Tests | What it pins down |

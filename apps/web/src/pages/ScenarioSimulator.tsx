@@ -48,6 +48,7 @@ const FIELDS: FieldSpec[] = [
   { key: "interest_rate_delta_pp", label: "利率变化", hint: "年化利率变动，单位为百分点（pp），债务余额保持不变", min: -10, max: 20, step: 0.25, display: "number" },
   { key: "fx_change_pct", label: "汇率变化", hint: "USD per 本币；+5% 表示本币升值（0.05）", min: -0.9, max: 1, step: 0.005, display: "pct" },
   { key: "dso_days_delta", label: "DSO 变化", hint: "在期末应收天数上增加的幅度，单位：天", min: -60, max: 120, step: 1, display: "number" },
+  { key: "capex_change_pct", label: "资本开支变化", hint: "资本开支相对基准运行率的变动（影响现金流，不影响 EBIT）", min: -0.9, max: 3, step: 0.05, display: "pct" },
   {
     key: "horizon_months",
     label: "预测期（月）",
@@ -70,6 +71,7 @@ export const DEFAULT_ASSUMPTIONS: ScenarioAssumptions = {
   interest_rate_delta_pp: 0,
   fx_change_pct: 0,
   dso_days_delta: 0,
+  capex_change_pct: 0,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -352,16 +354,6 @@ export default function ScenarioSimulator() {
               </div>
             );
           })}
-
-          <div className="rounded-md border border-dashed border-line bg-surface-3/20 p-3">
-            <div className="text-xs font-medium text-muted">资本开支 Capex</div>
-            <input className="input tnum mt-2 w-28" type="number" value={0} disabled readOnly />
-            <p className="mt-1 text-[11px] text-muted">
-              后端 <span className="code">ScenarioAssumptions</span> 不包含 capex 驱动因子，且 FastAPI 会拒绝未知字段
-              （<span className="code">extra=&quot;forbid&quot;</span>）。为避免提交被拒，此处不提供该滑块；
-              资本开支在情景模型中按基准运行率保持不变（见 model_note）。
-            </p>
-          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

@@ -97,6 +97,7 @@ formatting, "no `0` for missing"), `src/components/KpiCard.test.tsx` (value and 
 * **No component or state library.** React hooks only; `useAsync` covers the fetch lifecycle.
 * **No markdown dependency.** `src/components/Markdown.tsx` implements exactly the constructs the
   deterministic report builder emits (headings, tables, lists, blockquotes, bold/italic/code).
-* **No capex slider in the scenario simulator.** The backend's `ScenarioAssumptions` has
-  `extra="forbid"` and no capex driver, so the field is shown read-only with an explanation instead of
-  sending a request that FastAPI would reject with `422`.
+* **No capex chart on the scenario page.** `capex_change_pct` is a real driver and is exposed as an
+  input; the projection's capex effect is visible through FCF, ending cash and minimum cash, which the
+  comparison table and the monthly charts already show.
+* **No dark-mode toggle.** The palette follows `prefers-color-scheme`; there is no user switch.

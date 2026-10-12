@@ -290,6 +290,8 @@ export interface ScenarioAssumptions {
   interest_rate_delta_pp: number;
   fx_change_pct: number;
   dso_days_delta: number;
+  /** Capex vs the base run-rate. Moves cash flow, never EBIT. */
+  capex_change_pct: number;
 }
 
 export interface ScenarioRequest {

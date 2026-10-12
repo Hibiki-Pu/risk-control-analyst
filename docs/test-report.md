@@ -27,7 +27,7 @@ reading.
 | `python -m pytest tests -m evaluation -q` | 24 passed |
 | `npm run typecheck` (apps/web) | clean (`tsc --noEmit` on both tsconfigs) |
 | `npm test` (apps/web) | 6 files, 55 tests, all passed |
-| `npm run build` (apps/web) | 608 modules; `index-*.js` 797.40 kB (gzip 265.92 kB); `index-*.css` 19.49 kB (gzip 4.40 kB); built in 4.75s |
+| `npm run build` (apps/web) | 608 modules; `index-*.js` 796.96 kB (gzip 265.75 kB); `index-*.css` 19.42 kB (gzip 4.39 kB); built in 4.97s |
 | `python -m uvicorn app.main:app --port 8000` + `curl` | `/health` ok; `/metrics?month=2024-12` revenue 322,304.71 USD, gross margin 0.219339, EBIT 14,290.68, cash 274,200.03, coverage 1.5618x, DSO 69.4168 days; `/risk/register` level `critical`, score 59.0, 12 signals, 3 data gaps; `/market/series/DFF` 4.83 on 2024-12-01 (`is_fixture=true`); `POST /scenarios/run` base/upside/downside/custom EBIT 216,098 / 367,821 / −27,152 / 290,227; `POST /agent/ask` 21 findings, 33 evidence items, tools `get_risk_signals,get_financial_metrics`; `POST /reports/generate` → `RCA-202412-9b41c8`, verification `warn` |
 | `VITE_API_BASE=http://127.0.0.1:8000/api/v1 npx vitest run src/pages/Overview.live.test.tsx` | 2 passed — the browser bundle renders the live engine's numbers |
 
