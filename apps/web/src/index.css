@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+   Design tokens. RGB triplets so Tailwind's `<alpha-value>` works, e.g.
+   `bg-surface/60`. Light is the default; `prefers-color-scheme: dark` flips it.
+   --------------------------------------------------------------------------- */
+@layer base {
+  :root {
+    --surface: 247 248 250;
+    --surface-2: 255 255 255;
+    --surface-3: 238 241 245;
+    --line: 214 220 228;
+    --ink: 23 30 40;
+    --muted: 100 112 128;
+    --accent: 26 92 196;
+    --good: 17 128 84;
+    --warn: 176 112 8;
+    --bad: 190 44 44;
+    --info: 65 96 168;
+    --chart-grid: #dde3ec;
+    --chart-ink: #4a566a;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface: 14 18 25;
+      --surface-2: 23 29 39;
+      --surface-3: 32 40 53;
+      --line: 51 62 79;
+      --ink: 232 237 244;
+      --muted: 150 162 180;
+      --accent: 106 162 255;
+      --good: 60 200 140;
+      --warn: 233 178 71;
+      --bad: 246 116 116;
+      --info: 140 172 240;
+      --chart-grid: #2c3646;
+      --chart-ink: #9aa8bd;
+    }
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-surface text-ink;
+    font-feature-settings: "kern" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Every financial figure uses tabular (fixed-width) numerals so that columns of
+     numbers line up and cannot be misread. */
+  .tnum,
+  table td,
+  table th {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-lg border border-line bg-surface-2 p-4 shadow-sm;
+  }
+
+  .card-title {
+    @apply text-sm font-semibold tracking-wide text-ink;
+  }
+
+  .label {
+    @apply text-xs font-medium uppercase tracking-wide text-muted;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-line bg-surface-2 px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-surface-3 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply border-transparent bg-accent text-white hover:opacity-90;
+  }
+
+  .btn-chip {
+    @apply inline-flex items-center rounded-full border border-line bg-surface-2 px-2.5 py-1 text-xs text-ink transition-colors hover:bg-surface-3;
+  }
+
+  .chip-active {
+    @apply border-transparent bg-accent text-white hover:opacity-90;
+  }
+  .input {
+    @apply w-full rounded-md border border-line bg-surface-2 px-2 py-1.5 text-sm text-ink outline-none focus:border-accent;
+  }
+
+  .table {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .table th {
+    @apply border-b border-line bg-surface-3 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted;
+  }
+
+  .table td {
+    @apply border-b border-line px-3 py-2 align-top text-ink;
+  }
+
+  .link {
+    @apply text-accent underline decoration-dotted underline-offset-2 hover:opacity-80;
+  }
+
+  .code {
+    @apply rounded bg-surface-3 px-1 py-0.5 font-mono text-[0.75rem] text-ink;
+  }
+}
+
+/* Selected-filter override.
+   `.chip-active` is combined with `.btn-chip`, and both live in the components layer, so the
+   generated order — not the class order in the markup — would decide the winner. This rule sits
+   outside `@layer`, which Tailwind emits after the utilities layer, so the active chip always reads
+   as selected. */
+.chip-active {
+  border-color: transparent;
+  background-color: rgb(var(--accent));
+  color: #fff;
+}

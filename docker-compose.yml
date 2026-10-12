@@ -1,0 +1,55 @@
+# =============================================================================
+# RiskControl Analyst (风险控制分析师) — one-command local stack
+#
+#   docker compose up --build
+#   → API + docs ........ http://127.0.0.1:8000/docs
+#   → Web application ... http://127.0.0.1:5173
+#
+# Every figure served by this stack is SYNTHETIC demo data.
+# =============================================================================
+services:
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    container_name: rca-api
+    environment:
+      RCA_ENV: docker
+      RCA_HOST: 0.0.0.0
+      RCA_PORT: "8000"
+      RCA_DATA_DIR: /app/data/synthetic
+      RCA_RUNTIME_DIR: /app/runtime
+      RCA_SYNTHETIC_DATA: "true"
+      RCA_CORS_ORIGINS: http://127.0.0.1:5173,http://localhost:5173
+      # Optional: fill these in to enable live market data and the LLM analyst.
+      FRED_API_KEY: ${FRED_API_KEY:-}
+      RCA_LLM_PROVIDER: ${RCA_LLM_PROVIDER:-deterministic}
+      RCA_LLM_API_KEY: ${RCA_LLM_API_KEY:-}
+      RCA_LLM_BASE_URL: ${RCA_LLM_BASE_URL:-}
+      RCA_LLM_MODEL: ${RCA_LLM_MODEL:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - rca-runtime:/app/runtime
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: rca-web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+    environment:
+      RCA_API_UPSTREAM: http://api:8000
+
+volumes:
+  rca-runtime:

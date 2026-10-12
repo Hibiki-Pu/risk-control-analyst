@@ -1,0 +1,22 @@
+[project]
+name = "riskcontrol-analyst-api"
+version = "0.1.0"
+description = "Deterministic financial & risk-control calculation service for RiskControl Analyst (demo/synthetic data only)."
+requires-python = ">=3.10"
+readme = "README.md"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+markers = [
+    "evaluation: agent evaluation dataset cases",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"

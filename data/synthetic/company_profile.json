@@ -1,0 +1,43 @@
+{
+  "company_id": "SYNTH-AURELIA-001",
+  "display_name": "Aurelia Consumer Goods Pte. Ltd. (Synthetic Demo)",
+  "display_name_zh": "奥瑞利亚消费品集团（合成演示数据）",
+  "industry": "Consumer packaged goods (household & personal care)",
+  "regions": [
+    {
+      "code": "SG",
+      "name": "Singapore (regional HQ)",
+      "currency": "SGD"
+    },
+    {
+      "code": "TH",
+      "name": "Thailand",
+      "currency": "THB"
+    },
+    {
+      "code": "VN",
+      "name": "Vietnam",
+      "currency": "VND"
+    }
+  ],
+  "reporting_currency": "USD",
+  "local_currencies": [
+    "SGD",
+    "THB",
+    "VND"
+  ],
+  "fiscal_year_end": "12-31",
+  "period_range": {
+    "start": "2023-01",
+    "end": "2024-12",
+    "months": 24
+  },
+  "consolidation_note": "Regions are funding centres with fixed weights (SG 50%, TH 30%, VN 20%) applied to cash, debt and capex, so every group total is the exact sum of the regional rows.",
+  "synthetic": true,
+  "disclaimer": "Every figure in this dataset is computer generated for demonstration. The company is fictional and the macro values are fixtures, not live market data.",
+  "generator": {
+    "module": "app.data.synthetic",
+    "version": "1.0.0",
+    "seed": 20260101
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "dataset_id": "synthetic-aurelia-v1",
+  "generated_by": "app.data.synthetic",
+  "generator_version": "1.0.0",
+  "seed": 20260101,
+  "period": {
+    "start": "2023-01",
+    "end": "2024-12",
+    "months": 24
+  },
+  "reporting_currency": "USD",
+  "synthetic": true,
+  "row_counts": {
+    "monthly_financials": 72,
+    "monthly_budget": 24,
+    "macro_series": 168
+  },
+  "declared_gaps": [
+    {
+      "region": "TH",
+      "month": "2024-07",
+      "column": "inventory_usd",
+      "reason": "Declared demo gap: the Thailand stock count was not closed before the cut-off. Working-capital metrics for this region-month must report 'partial coverage'."
+    }
+  ],
+  "files": [
+    {
+      "name": "monthly_financials.csv",
+      "rows": 72
+    },
+    {
+      "name": "monthly_budget.csv",
+      "rows": 24
+    },
+    {
+      "name": "macro_series.csv",
+      "rows": 168
+    }
+  ],
+  "generated_at": "2026-10-12T04:05:13.329293+00:00",
+  "sha256": {
+    "monthly_financials.csv": "85c0177f7081ea0a85d5638023d101c38794764a3cde395c787c0376dc114de7",
+    "monthly_budget.csv": "677756efddfe398c7c839c7cdb39f9ff2a54b9f3a271ad2caf52864f6437c30d",
+    "macro_series.csv": "9b28a0edcff1e0512a63c44c9b3aee18c970ce3ffefb8e21a65aab73691d2719",
+    "company_profile.json": "24d034b9d286814a70849b5d0198fbae9f325581d49d7dbdaef6afbd2aa4c7b8"
+  }
+}

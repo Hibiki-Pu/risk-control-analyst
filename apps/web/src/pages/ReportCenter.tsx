@@ -1,0 +1,255 @@
+/**
+ * Report centre — generate the management report, then prove it.
+ *
+ * The report is built by the deterministic report builder and immediately run through a verification
+ * checklist. This page shows that checklist grouped by pass/warn/fail with the full `detail` text,
+ * renders the markdown body locally, lists the citations, and offers markdown/HTML downloads from
+ * `GET /reports/{id}?format=`.
+ */
+
+import { useMemo, useState } from "react";
+
+import { api, downloadText, errorMessage } from "@/api/client";
+import type { ReportDocument, VerificationItem } from "@/api/types";
+import { PageHeader } from "@/components/AppLayout";
+import { EmptyState, ErrorState, Skeleton, SkeletonTable } from "@/components/Feedback";
+import { Markdown } from "@/components/Markdown";
+import { StatusBadge, VerificationBadge } from "@/components/StatusBadge";
+import { formatDateTime, formatPeriod, NOT_AVAILABLE, verificationLabel } from "@/lib/format";
+import { useFilters } from "@/lib/useFilters";
+
+const GROUPS: { status: "fail" | "warn" | "pass"; title: string; tone: "bad" | "warn" | "good" }[] = [
+  { status: "fail", title: "未通过 FAIL", tone: "bad" },
+  { status: "warn", title: "警告 WARN", tone: "warn" },
+  { status: "pass", title: "通过 PASS", tone: "good" },
+];
+
+function VerificationGroup({
+  title,
+  tone,
+  items,
+}: {
+  title: string;
+  tone: "bad" | "warn" | "good";
+  items: VerificationItem[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="rounded-md border border-line bg-surface-3/30 p-3">
+      <div className="mb-2 flex items-center gap-2">
+        <StatusBadge tone={tone}>{title}</StatusBadge>
+        <span className="tnum text-xs text-muted">{items.length} 项</span>
+      </div>
+      <ul className="space-y-2">
+        {items.map((item) => (
+          <li key={item.check_id} className="rounded border border-line bg-surface-2 px-2 py-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-[11px] text-muted">{item.check_id}</span>
+              <span className="text-sm font-medium text-ink">{item.description}</span>
+            </div>
+            <p className="mt-1 text-[11px] text-muted" data-testid={`verification-detail-${item.check_id}`}>
+              {item.detail || "该检查项没有附加说明"}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default function ReportCenter() {
+  const { latest } = useFilters();
+  const [doc, setDoc] = useState<ReportDocument | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const [horizon, setHorizon] = useState(12);
+  const [downloading, setDownloading] = useState<"markdown" | "html" | null>(null);
+  const [downloadError, setDownloadError] = useState<unknown>(null);
+
+  const generate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.generateReport({ month: latest, horizon_months: horizon });
+      setDoc(response);
+    } catch (caught) {
+      setError(caught);
+      setDoc(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const download = async (format: "markdown" | "html") => {
+    if (!doc) return;
+    setDownloading(format);
+    setDownloadError(null);
+    try {
+      const text = await api.reportText(doc.report_id, format);
+      downloadText(
+        `${doc.report_id}.${format === "markdown" ? "md" : "html"}`,
+        text,
+        format === "markdown" ? "text/markdown;charset=utf-8" : "text/html;charset=utf-8",
+      );
+    } catch (caught) {
+      setDownloadError(caught);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, VerificationItem[]>();
+    for (const item of doc?.verification ?? []) {
+      const bucket = map.get(item.status) ?? [];
+      bucket.push(item);
+      map.set(item.status, bucket);
+    }
+    return map;
+  }, [doc]);
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="报告中心"
+        description={
+          <>
+            由确定性报告构建器生成的管理层报告，生成后立即执行校验清单（引证、一致性、口径）。
+            正文以内置的轻量 Markdown 渲染器呈现，不引入额外的 Markdown 依赖。
+          </>
+        }
+        actions={
+          <>
+            <label className="label" htmlFor="horizon">
+              预测期
+            </label>
+            <select
+              id="horizon"
+              className="input w-28"
+              value={horizon}
+              onChange={(event) => setHorizon(Number(event.target.value))}
+            >
+              {[3, 6, 12, 18, 24, 36].map((value) => (
+                <option key={value} value={value}>
+                  {value} 个月
+                </option>
+              ))}
+            </select>
+            <button type="button" className="btn btn-primary" onClick={generate} disabled={loading} data-testid="generate-report">
+              {loading ? "生成中…" : "生成报告"}
+            </button>
+          </>
+        }
+      />
+
+      {downloadError ? (
+        <ErrorState title="下载失败" error={downloadError} message={errorMessage(downloadError)} />
+      ) : null}
+
+      {loading ? (
+        <section className="card space-y-3">
+          <Skeleton className="h-6 w-64" />
+          <SkeletonTable rows={5} columns={4} />
+          <Skeleton className="h-64 w-full" />
+        </section>
+      ) : error ? (
+        <ErrorState title="报告生成失败" error={error} message={errorMessage(error)} onRetry={generate} retrying={loading} />
+      ) : !doc ? (
+        <EmptyState
+          title="尚未生成报告"
+          description="点击「生成报告」调用 POST /reports/generate。返回内容包含 Markdown 正文、HTML 版本、引证列表与校验清单。"
+          action={
+            <button type="button" className="btn btn-primary" onClick={generate}>
+              生成报告
+            </button>
+          }
+        />
+      ) : (
+        <>
+          <section className="card space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-base font-semibold text-ink">{doc.title}</h2>
+                <div className="text-[11px] text-muted">
+                  <span className="font-mono">{doc.report_id}</span> · 期间 {formatPeriod(doc.period)} · as_of{" "}
+                  {formatPeriod(doc.as_of)} · 生成时间 {formatDateTime(doc.generated_at)}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <VerificationBadge status={doc.verification_status} />
+                <StatusBadge tone="info">引擎 {doc.engine}</StatusBadge>
+                <StatusBadge tone="neutral">币种 {doc.currency}</StatusBadge>
+                <StatusBadge tone="info">合成数据 {String(doc.synthetic)}</StatusBadge>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" className="btn" onClick={() => void download("markdown")} disabled={downloading !== null}>
+                {downloading === "markdown" ? "下载中…" : "下载 Markdown"}
+              </button>
+              <button type="button" className="btn" onClick={() => void download("html")} disabled={downloading !== null}>
+                {downloading === "html" ? "下载中…" : "下载 HTML"}
+              </button>
+              <span className="text-[11px] text-muted">
+                下载地址 GET /reports/{doc.report_id}?format=markdown|html
+              </span>
+            </div>
+          </section>
+
+          <section className="card">
+            <h2 className="card-title mb-2">校验清单</h2>
+            {doc.verification.length === 0 ? (
+              <EmptyState title="没有校验项" description="后端返回的 verification 为空。" />
+            ) : (
+              <div className="space-y-3">
+                {GROUPS.map((group) => (
+                  <VerificationGroup
+                    key={group.status}
+                    title={group.title}
+                    tone={group.tone}
+                    items={grouped.get(group.status) ?? []}
+                  />
+                ))}
+                <p className="text-[11px] text-muted">
+                  校验状态：{verificationLabel(doc.verification_status)} · 共 {doc.verification.length} 项检查
+                </p>
+              </div>
+            )}
+          </section>
+
+          <div className="grid gap-3 xl:grid-cols-4">
+            <section className="card xl:col-span-3">
+              <h2 className="card-title mb-2">报告正文</h2>
+              {doc.markdown ? (
+                <Markdown source={doc.markdown} className="max-h-[38rem] overflow-y-auto pr-2" />
+              ) : (
+                <EmptyState title="正文为空" description="后端未返回 markdown 正文。" />
+              )}
+            </section>
+
+            <section className="card">
+              <h2 className="card-title mb-2">引证列表</h2>
+              {doc.citations.length === 0 ? (
+                <p className="text-xs text-muted">该报告没有引证条目。</p>
+              ) : (
+                <ul className="space-y-1">
+                  {doc.citations.map((citation) => (
+                    <li key={citation} className="code block break-all" title="citation_id">
+                      {citation}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-3 text-[11px] text-muted">
+                共 {doc.citations.length} 条引证 · 报告中的每个数字都应能在证据表中找到对应条目。
+              </p>
+              <p className="mt-1 text-[11px] text-muted">
+                HTML 版本长度：{doc.html ? `${doc.html.length} 字符` : NOT_AVAILABLE}
+              </p>
+            </section>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

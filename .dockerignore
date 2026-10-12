@@ -1,0 +1,17 @@
+# Keep build contexts small and never ship local state or secrets.
+.git
+.gitignore
+**/node_modules
+**/dist
+**/.vite
+**/__pycache__
+**/.pytest_cache
+**/.coverage
+**/htmlcov
+**/runtime
+.env
+.env.*
+!.env.example
+_scratch
+docs/samples
+*.log
