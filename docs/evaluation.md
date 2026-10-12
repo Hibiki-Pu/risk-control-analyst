@@ -15,35 +15,45 @@ python -m pytest tests -q --cov=app --cov-report=term
 | `test_agent.py` | 30 | Planner intents (zh/en), closed tool set, argument rejection, tool failure handling, audit trail, citation guard, optional LLM path with a stub client |
 | `test_agent_evaluation.py` | 24 | The 22-case evaluation dataset (below) plus two dataset-design checks |
 | `test_api.py` | 22 | Every endpoint, request validation, upload happy path/sad path, error hygiene |
+| `test_security_scan.py` | 25 | The privacy/secret gate: credential shapes, placeholder exemptions, housekeeping rules, and the repository-clean assertion |
+| `test_scenarios.py` | 22 | Run-rate identity, driver direction, DSO/capex isolation, tornado ranking, determinism |
 | `test_engine.py` | 21 | Hand-calculated metric values, stock-vs-flow handling, working-capital formulas, zero denominators, missing values |
-| `test_formulas.py` | 10 | Safe division, percentage change, missing-cell counting, calendar helpers |
-| `test_market.py` | 13 | Fixture provenance, live fetch, cache TTL, retry, failure fallback, staleness |
+| `test_synthetic.py` | 18 | Seed determinism, revenue identity, declared gap, round-trip write/load |
 | `test_reports.py` | 17 | Report sections, all seven verification checks, tamper detection, HTML escaping |
 | `test_risk.py` | 14 | Each rule's trigger and severity boundary, data gaps, score arithmetic |
-| `test_scenarios.py` | 22 | Run-rate identity, driver direction, DSO/capex isolation, tornado ranking, determinism |
-| `test_synthetic.py` | 18 | Seed determinism, revenue identity, declared gap, round-trip write/load |
-| **Total** | **191** | **All passing** |
+| `test_market.py` | 13 | Fixture provenance, live fetch, cache TTL, retry, failure fallback, staleness |
+| `test_formulas.py` | 10 | Safe division, percentage change, missing-cell counting, calendar helpers |
+| `test_market_edgar.py` | 9 | The designed-and-refused EDGAR connector: endpoints, access policy, refusal reasons, status endpoint |
+| **Total** | **225** | **All passing** |
 
-Coverage: **96%** of statements (`2835` statements, `111` missed).
+Coverage: **96%** of statements (`2925` statements, `113` missed).
 
 | Module | Cover | Module | Cover |
 | --- | --- | --- | --- |
-| `finance/engine.py` | 99% | `reports/verify.py` | 99% |
-| `finance/formulas.py` | 100% | `finance/scenarios.py` | 98% |
-| `schemas.py` | 100% | `market/adapter.py` | 98% |
-| `core/config.py` | 100% | `agent/orchestrator.py` | 96% |
-| `services.py` | 100% | `data/synthetic.py` | 96% |
-| `agent/tools.py` | 95% | `reports/generator.py` | 94% |
-| `data/store.py` | 95% | `api/routes.py` | 94% |
+| `finance/engine.py` | 99% | `market/adapter.py` | 98% |
+| `reports/verify.py` | 99% | `market/edgar.py` | 97% |
+| `finance/formulas.py` | 100% | `agent/orchestrator.py` | 96% |
+| `schemas.py` | 100% | `data/synthetic.py` | 96% |
+| `core/config.py` | 100% | `agent/tools.py` | 95% |
+| `services.py` | 100% | `data/store.py` | 95% |
+| `finance/scenarios.py` | 98% | `reports/generator.py` | 94% |
+| `market/catalog.py` | 100% | `api/routes.py` | 94% |
 | `finance/risk.py` | 93% | `data/ingest.py` | 89% |
 | `main.py` | 88% | `agent/llm.py` | 79% (live HTTP path) |
+
+The privacy/secret gate is also runnable on its own:
+
+```bash
+python scripts/check_secrets.py          # 121 tracked files -> "Result: clean"
+python scripts/check_secrets.py --json   # machine-readable
+```
 
 ## 2. Frontend suite — `vitest`
 
 ```bash
 cd apps/web
 npm run typecheck     # tsc --noEmit, clean
-npm test              # 6 files, 55 tests, all passing
+npm test              # 7 files, 57 tests, all passing
 npm run build         # 608 modules, dist/assets/index-*.js 796.96 kB (gzip 265.75 kB), CSS 19.42 kB (gzip 4.39 kB)
 ```
 
@@ -54,9 +64,10 @@ npm run build         # 608 modules, dist/assets/index-*.js 796.96 kB (gzip 265.
 | `components/Feedback.test.tsx` | 3 | Loading skeleton, empty state, error state with the API's own message |
 | `pages/PnlAnalysis.test.ts` | 7 | Variance sign convention per cost/revenue line |
 | `pages/Overview.test.tsx` | 6 | Skeleton → loaded transition, endpoint URLs, honest rendering |
-| `pages/Overview.live.test.tsx` | 2 | **Live integration** against a running FastAPI service |
+| `pages/app.live.test.tsx` | 2 | **All seven routes against a live API**: shell settles, real data arrives, no failure marker, no `NaN` |
+| `pages/Overview.live.test.tsx` | 2 | Live integration: the engine's figures reach the screen |
 
-The live test is skipped unless the suite is started with the backend URL:
+The live suites are skipped unless the run is started with the backend URL:
 
 ```bash
 # terminal 1
@@ -65,10 +76,18 @@ cd services/api && python -m uvicorn app.main:app --port 8000
 cd apps/web && VITE_API_BASE=http://127.0.0.1:8000/api/v1 npm test
 ```
 
-When it runs it asserts that the browser shows the engine's own figures for the
-shipped dataset (revenue `$322,305`, cash `$274,200`, gross margin `21.93%`,
-interest coverage `1.56x`, risk signal `RC-01`) and that the synthetic banner is
-present — i.e. the contract, the proxy path and the rendering all agree.
+`app.live.test.tsx` walks every route (`/`, `/pnl`, `/risk`, `/market`, `/scenarios`, `/analyst`,
+`/reports`) and waits for both the shell (`/health`) to settle **and** page-specific content that only
+the live API can produce — `$322,305` on Overview, `−3.96%` (the FY2024 revenue variance) on the P&L
+page, `RC-01` on the risk register, the fixture value `4.83` on the market page, the `Upside` preset on
+the simulator, the month range on the analyst page and the as-of date on the report centre. It then
+asserts that no page shows a failure panel, a connection error or `NaN`.
+
+With `RCA_WRITE_SNAPSHOT=1` the same test writes
+[`docs/samples/ui-render-snapshot.md`](samples/ui-render-snapshot.md) — the text each page actually
+rendered from the live API. That file is **evidence instead of a screenshot**: no browser was
+available in the build environment, so the artefact records real rendered output rather than a drawn
+mock.
 
 ## 3. Agent evaluation dataset
 
@@ -95,9 +114,10 @@ in the response content.
 
 | Item | Status |
 | --- | --- |
-| Browser/Playwright end-to-end and visual regression | **Not Run** — Playwright is a P1 item; the jsdom live test covers rendering + contract, not a real browser. |
+| Real browser (Playwright) end-to-end, visual regression, screenshots | **Not Run** — Playwright is a P1 item. `app.live.test.tsx` covers rendering, contract and all seven routes in jsdom, and writes a text render snapshot, but it is not a browser. |
 | Docker Compose build and run | **Not Run** — Docker is not installed in this environment. The compose file and Dockerfiles are provided but unverified. |
 | Live FRED request against the real API | **Not Run** — no `FRED_API_KEY` here. The live HTTP path is covered by `httpx.MockTransport` tests (success, 5xx retry, empty payload, timeout, cache TTL, staleness). |
+| SEC EDGAR calls | **Not Run by design** — the connector is designed and refuses to fetch in v1; nine tests pin the endpoints, the access policy and the refusal. |
 | Real OpenAI-compatible provider call | **Not Run** — no key. Both the planner and narrator paths are covered with `StubLLMClient`, including the fabricated-number guard. |
 | Load/performance testing | **Not Run** — out of scope for v1. |
 | Cross-browser and mobile layout | **Not Run** — responsive rules exist, no device matrix was executed. |

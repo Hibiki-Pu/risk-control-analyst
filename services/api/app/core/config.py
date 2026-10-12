@@ -96,3 +96,39 @@ def get_settings() -> Settings:
 @lru_cache
 def get_fred_settings() -> FredSettings:
     return FredSettings()
+
+
+class EdgarSettings(BaseSettings):
+    """Optional SEC EDGAR connector settings (prefix ``EDGAR_``).
+
+    The connector is **designed but not implemented in v1** (see
+    ``docs/market-data-sources.md``). The settings exist so the interface, the
+    access policy and the refusal message are explicit rather than implicit.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="EDGAR_",
+        env_file=(REPO_ROOT / ".env", API_DIR / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    enabled: bool = False
+    #: SEC requires a descriptive User-Agent with contact details; requests without
+    #: one are refused by the SEC fair-access policy.
+    user_agent: str = ""
+    base_url: str = "https://data.sec.gov"
+    archive_url: str = "https://www.sec.gov"
+    timeout_seconds: float = 10.0
+    max_retries: int = 2
+    min_request_interval_seconds: float = 0.2
+    cache_ttl_seconds: int = 86400
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.user_agent.strip())
+
+
+@lru_cache
+def get_edgar_settings() -> EdgarSettings:
+    return EdgarSettings()

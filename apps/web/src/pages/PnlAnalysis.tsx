@@ -88,9 +88,18 @@ export default function PnlAnalysis() {
     [window?.start, window?.end, regionKey],
   );
 
+  // Plan comparison covers the fiscal year of the month on screen, so the table matches the
+  // period the management report uses instead of silently mixing two plan years.
+  const fiscalYear = (month ?? window?.end ?? "").slice(0, 4);
   const varianceState = useAsync<MetricSet>(
-    (signal) => api.budgetVariance({ month: month ?? undefined }, signal),
-    [month],
+    (signal) =>
+      api.budgetVariance(
+        fiscalYear
+          ? { start: `${fiscalYear}-01`, end: `${fiscalYear}-12` }
+          : { month: month ?? undefined },
+        signal,
+      ),
+    [month, fiscalYear],
   );
 
   const points: MonthlyPoint[] = seriesState.data?.points ?? [];

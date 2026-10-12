@@ -44,10 +44,12 @@ and what happens if we do nothing?"** — and they cannot trust a chatbot to do 
 | Risk register | 14 rules (`RC-01`…`RC-14`) with severity ladders, weighted score and explicit data gaps |
 | Scenario simulator | 11 drivers (volume, price, material, labour, overhead, opex, rate Δpp, FX, DSO Δdays, capex, horizon) → month-by-month projection, three presets, tornado sensitivity, CSV export |
 | Market intelligence | 7 curated FRED series with caching, retry, rate limiting, staleness flags and a live-vs-fixture provenance badge |
+| SEC EDGAR | Interface **designed and deliberately not enabled** in v1: data contract, five endpoints, the SEC access policy and an explicit refusal, published at `GET /api/v1/market/edgar/status` so an unfinished integration can never look like data |
 | AI analyst | Closed tool set, strict argument schemas, audited tool calls, citation-checked narrative; runs with **zero API keys** |
 | Report centre | 8 sections, Markdown/HTML export, and a pre-export verification step (7 checks) that can fail the report |
 | Data ingestion | CSV/XLSX upload with schema validation, identity checks and honest degradation when a plan is absent |
 | Web UI | 7 pages in Simplified Chinese: Overview, P&L analysis, Risk control, Market intelligence, Scenario simulator, AI analyst, Report centre |
+| Delivery gates | `scripts/check_secrets.py` privacy/secret scan (tested, exits non-zero on any finding) and a deterministic seed generator with a SHA-256 manifest |
 
 ## 4. Architecture
 
@@ -141,6 +143,9 @@ curl -s "http://127.0.0.1:8000/api/v1/risk/register" | jq '{level:.overall_level
 curl -s -X POST "http://127.0.0.1:8000/api/v1/agent/ask" \
      -H "Content-Type: application/json" \
      -d '{"question":"我们的风险和现金状况如何？","month":"2024-12"}' | jq '.key_findings[0:2]'
+
+curl -s "http://127.0.0.1:8000/api/v1/market/edgar/status" | jq '{implemented, available, reason}'
+# { "implemented": false, "available": false, "reason": "The SEC EDGAR connector is designed but not implemented in v1. …" }
 ```
 
 Full contract: [`docs/api-contract.md`](docs/api-contract.md) · real captured responses:
@@ -162,11 +167,12 @@ rule and the missing-data policy.
 
 | Check | Result |
 | --- | --- |
-| `pytest` | **191 tests passed**, 96% statement coverage (`2835` statements, `111` missed) |
-| `vitest` | **55 tests passed** across 6 files, including a live integration test against a running API |
+| `pytest` | **225 tests passed**, 96% statement coverage (`2925` statements, `113` missed) |
+| `vitest` | **57 tests passed** across 7 files, including a sweep of all seven routes against a running API |
 | `tsc --noEmit` | clean |
 | `vite build` | 608 modules, 796.96 kB JS (gzip 265.75 kB), 19.42 kB CSS |
 | Agent evaluation | **22/22 cases** across `normal`, `missing_data`, `contradictory`, `zero_denominator`, `unit_fx`, `injection`, `api_failure` |
+| Privacy & secret scan | `python scripts/check_secrets.py` → `Result: clean` over 121 tracked files (the gate has 25 tests of its own) |
 | Pre-export verification | V-01 111/111 citations resolved · V-02 every cited number reproduced · V-04 no uncited figure · V-05 synthetic declared · V-06 as-of stated · V-07 **warn** (fixture market data, by design without a key) · V-08 no undefined metric shown as a value |
 | End-to-end | `docs/samples/report-sample.md` and `report-sample.html` are real outputs of the running service |
 
@@ -178,24 +184,28 @@ Details, including what is **Not Run** and why: [`docs/evaluation.md`](docs/eval
 No browser capture was possible in the build environment, so the demo is evidenced with real artefacts
 rather than images:
 
+* [`docs/samples/ui-render-snapshot.md`](docs/samples/ui-render-snapshot.md) — **the text all seven
+  routes actually rendered from the live API** (Overview `$322,305`, risk register `RC-01`…`RC-14`,
+  market fixtures with provenance, presets, analyst page, report centre), captured by
+  `app.live.test.tsx` with `RCA_WRITE_SNAPSHOT=1`.
 * [`docs/samples/report-sample.html`](docs/samples/report-sample.html) — the rendered management report
   (open it in a browser; it is the same HTML the Report Centre downloads).
 * [`docs/samples/metrics-2024-12.json`](docs/samples/metrics-2024-12.json),
   [`docs/samples/risk-register.json`](docs/samples/risk-register.json),
   [`docs/samples/agent-answer.json`](docs/samples/agent-answer.json) — captured API responses.
-* The live integration test proves the UI renders those same figures
-  (`revenue $322,305`, `cash $274,200`, `gross margin 21.93%`, `interest coverage 1.56x`, `RC-01`).
 
 ## 9. Repository layout
 
 ```
 risk-control-analyst/
-├── apps/web/                   React + TypeScript + Vite + Tailwind + ECharts (7 pages, 55 tests)
+├── apps/web/                   React + TypeScript + Vite + Tailwind + ECharts (7 pages, 57 tests)
 ├── services/api/               FastAPI + Pydantic + pandas (engine, risk, scenarios, market, reports, agent)
-│   └── tests/                  191 pytest tests + tests/evaluation/agent_cases.json
+│   └── tests/                  225 pytest tests + tests/evaluation/agent_cases.json
 ├── data/synthetic/             generator + shipped synthetic CSV/JSON + SHA-256 manifest
+├── scripts/check_secrets.py    privacy & secret gate (tested, CI-ready exit code)
 ├── docs/                       PRD, user flows, architecture, methodology, data dictionary,
-│                               risk rules, market sources, agent design, evaluation, test report, samples
+│                               risk rules, market sources, agent design, evaluation, test report,
+│                               samples/ (report, API responses, UI render snapshot)
 ├── docker-compose.yml          api + web (unverified: Docker not available here)
 ├── .env.example                every setting, all values empty
 └── README.md
@@ -209,6 +219,8 @@ risk-control-analyst/
   debt held flat with no new financing; the full contract is in `MODEL_NOTE` and in every response.
 * **Macro data is fixtures by default.** Without a FRED key the "market intelligence" page is a
   demonstration of provenance handling, not of live markets.
+* **SEC EDGAR is designed, not implemented.** The interface, endpoints and access policy ship, and the
+  connector refuses to fetch; no filing data is read in v1.
 * **Group-level plan only.** There is no regional budget split, so regional budget variance is not
   available.
 * **Not modelled:** customer concentration, covenant headroom, inventory ageing, tax computation,
@@ -220,7 +232,8 @@ risk-control-analyst/
 ## 11. Roadmap
 
 **P0 — delivered**: synthetic data + validation, metric engine, risk register, scenario engine, market
-adapter, report builder + verification, agent with guard, REST API, seven-page web UI, 246 tests.
+adapter, EDGAR interface design, report builder + verification, agent with guard, REST API, seven-page
+web UI, privacy scan gate, 282 tests (225 backend + 57 frontend).
 
 **P1**: Playwright end-to-end + screenshots · PDF export · docker compose verification in CI ·
 code-splitting to cut the 797 kB JS bundle · upload dry-run preview · regional budget layer.

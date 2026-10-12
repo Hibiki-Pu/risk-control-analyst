@@ -31,6 +31,7 @@ percentages are **decimal fractions** (`0.2193` = 21.93%) unless `unit` says oth
 | GET | `/risk/register` | `month`, `regions[]` | `RiskRegister` |
 | GET | `/market/catalog` | – | `{series: MarketCatalogItem[], fred_configured, policy}` |
 | GET | `/market/series/{id}` | `allow_live`, `limit` | `MarketSeries` |
+| GET | `/market/edgar/status` | – | `{connector, implemented, enabled, configured, available, reason, access_policy, endpoints, planned_models}` — the SEC EDGAR connector is designed but **not implemented** in v1 and always reports `implemented: false` |
 | GET | `/scenarios/presets` | – | `{presets: [{scenario_id,label,description,assumptions}]}` |
 | GET | `/agent/tools` | – | `{tools: [{name, description, parameters}]}` |
 | GET | `/agent/audit` | `limit` | `{count, records: ToolCallRecord[], note}` |

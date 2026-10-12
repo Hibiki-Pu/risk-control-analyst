@@ -157,6 +157,19 @@ def market_series(
     return series_obj.model_dump(mode="json")
 
 
+@router.get("/market/edgar/status", summary="Status of the designed (not implemented) SEC EDGAR connector")
+def edgar_status() -> dict:
+    """The EDGAR interface is designed but unused in v1.
+
+    The endpoint exists so the design — endpoints, access policy, refusal reason —
+    is reviewable without reading the source, and so that no caller can mistake an
+    unfinished integration for live data.
+    """
+    from app.market.edgar import EdgarAdapter
+
+    return EdgarAdapter().status()
+
+
 @router.get("/scenarios/presets", summary="Preset scenario definitions")
 def scenario_presets() -> dict:
     return {

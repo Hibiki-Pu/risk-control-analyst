@@ -78,8 +78,36 @@ excluded from `latest_value`, `previous_value` and `change`.
   `get_market_series` tool, and any fixture value it quotes is labelled as a demo
   fixture in the same finding.
 
-## Optional next source
+## SEC EDGAR — designed interface, deliberately not used in v1
 
-SEC EDGAR is designed for but **not** implemented in v1 (see `docs/roadmap.md`,
-P2): it needs a user agent, per-filing rate limits and a document parser, and
-none of that is required to demonstrate the risk-control loop.
+The brief asks for the EDGAR interface to be **designed without forcing a first
+release integration**. It is implemented that way:
+
+* `services/api/app/market/edgar.py` defines the data contract (`EdgarFiling`,
+  `EdgarFact`), the endpoints and the access policy.
+* **Nothing is fetched.** `IMPLEMENTED = False`, every method raises
+  `EdgarNotEnabled` with a message pointing at this document, and
+  `EdgarMisconfigured` guards the missing-User-Agent case for the future
+  implementation.
+* `GET /api/v1/market/edgar/status` publishes the design, so a reviewer can check
+  it without reading the source, and no caller can mistake an unfinished
+  integration for data.
+* The connector is **not** exposed as an agent tool, so the AI analyst cannot
+  reach it either.
+
+| Designed endpoint | Purpose |
+| --- | --- |
+| `GET https://www.sec.gov/files/company_tickers.json` | Ticker → zero-padded CIK resolution (never guessed) |
+| `GET https://data.sec.gov/submissions/CIK{cik:010d}.json` | Entity data + recent filing index (up to 1000 filings) |
+| `GET https://data.sec.gov/api/xbrl/companyconcept/CIK{cik:010d}/us-gaap/{tag}.json` | One XBRL concept as a time series (preferred: small payload) |
+| `GET https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json` | All XBRL facts (large; needs a size guard) |
+| `GET https://www.sec.gov/cgi-bin/browse-edgar?...type={form}&output=atom` | Filing index as Atom, for filings the JSON index misses |
+
+Access policy the implementation must honour: a descriptive `User-Agent` with
+contact details on every request, fewer than 10 requests per second
+(`EDGAR_MIN_REQUEST_INTERVAL_SECONDS=0.2` → 5/s), aggressive caching
+(`EDGAR_CACHE_TTL_SECONDS=86400`), an absent tag reported as `missing` rather
+than zero, and full attribution (accession number, filing date, source URL) in
+the UI and in the report exactly as the FRED adapter does today.
+
+Work item: `docs/roadmap.md` P2-1.
