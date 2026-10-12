@@ -6,6 +6,7 @@ The last test is the acceptance gate: the shipped repository must be clean.
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -128,3 +129,27 @@ def test_main_returns_non_zero_when_dirty(monkeypatch, capsys) -> None:
     )
     assert scanner.main([]) == 1
     assert "must be fixed" in capsys.readouterr().out
+
+
+def test_output_is_ascii_safe_for_windows_consoles() -> None:
+    """A cp932/cp1252 terminal must not be able to crash the gate (regression)."""
+    finding = scanner.Finding("error", "secret: assignment", "docs/示例.md", 3, "值含有中文")
+    rendered = finding.render()
+    assert rendered.isascii(), rendered
+    assert "\\u" in rendered, "non-ASCII content must be escaped, not dropped"
+    report = scanner.summarise([finding])
+    assert json.dumps(report, ensure_ascii=False)
+
+
+def test_cli_runs_end_to_end_without_an_encoding_crash() -> None:
+    """Run `main()` for real: exit code 0, and the summary lines are ASCII."""
+    import io
+    import contextlib
+
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        code = scanner.main([])
+    output = buffer.getvalue()
+    assert code == 0, output
+    assert "Result: clean" in output
+    assert output.isascii(), output

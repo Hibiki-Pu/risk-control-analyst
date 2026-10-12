@@ -15,7 +15,7 @@ python -m pytest tests -q --cov=app --cov-report=term
 | `test_agent.py` | 30 | Planner intents (zh/en), closed tool set, argument rejection, tool failure handling, audit trail, citation guard, optional LLM path with a stub client |
 | `test_agent_evaluation.py` | 24 | The 22-case evaluation dataset (below) plus two dataset-design checks |
 | `test_api.py` | 22 | Every endpoint, request validation, upload happy path/sad path, error hygiene |
-| `test_security_scan.py` | 25 | The privacy/secret gate: credential shapes, placeholder exemptions, housekeeping rules, and the repository-clean assertion |
+| `test_security_scan.py` | 27 | The privacy/secret gate: credential shapes, placeholder exemptions, housekeeping rules, ASCII-safe output on a cp932 console, and the repository-clean assertion |
 | `test_scenarios.py` | 22 | Run-rate identity, driver direction, DSO/capex isolation, tornado ranking, determinism |
 | `test_engine.py` | 21 | Hand-calculated metric values, stock-vs-flow handling, working-capital formulas, zero denominators, missing values |
 | `test_synthetic.py` | 18 | Seed determinism, revenue identity, declared gap, round-trip write/load |
@@ -24,7 +24,7 @@ python -m pytest tests -q --cov=app --cov-report=term
 | `test_market.py` | 13 | Fixture provenance, live fetch, cache TTL, retry, failure fallback, staleness |
 | `test_formulas.py` | 10 | Safe division, percentage change, missing-cell counting, calendar helpers |
 | `test_market_edgar.py` | 9 | The designed-and-refused EDGAR connector: endpoints, access policy, refusal reasons, status endpoint |
-| **Total** | **225** | **All passing** |
+| **Total** | **227** | **All passing** |
 
 Coverage: **96%** of statements (`2925` statements, `113` missed).
 
@@ -44,7 +44,7 @@ Coverage: **96%** of statements (`2925` statements, `113` missed).
 The privacy/secret gate is also runnable on its own:
 
 ```bash
-python scripts/check_secrets.py          # 121 tracked files -> "Result: clean"
+python scripts/check_secrets.py          # 126 tracked files -> "Result: clean"
 python scripts/check_secrets.py --json   # machine-readable
 ```
 

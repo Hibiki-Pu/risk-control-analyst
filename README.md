@@ -167,12 +167,12 @@ rule and the missing-data policy.
 
 | Check | Result |
 | --- | --- |
-| `pytest` | **225 tests passed**, 96% statement coverage (`2925` statements, `113` missed) |
+| `pytest` | **227 tests passed**, 96% statement coverage (`2925` statements, `113` missed) |
 | `vitest` | **57 tests passed** across 7 files, including a sweep of all seven routes against a running API |
 | `tsc --noEmit` | clean |
 | `vite build` | 608 modules, 796.96 kB JS (gzip 265.75 kB), 19.42 kB CSS |
 | Agent evaluation | **22/22 cases** across `normal`, `missing_data`, `contradictory`, `zero_denominator`, `unit_fx`, `injection`, `api_failure` |
-| Privacy & secret scan | `python scripts/check_secrets.py` → `Result: clean` over 121 tracked files (the gate has 25 tests of its own) |
+| Privacy & secret scan | `python scripts/check_secrets.py` → `Result: clean` over 126 tracked files (the gate has 27 tests of its own) |
 | Pre-export verification | V-01 111/111 citations resolved · V-02 every cited number reproduced · V-04 no uncited figure · V-05 synthetic declared · V-06 as-of stated · V-07 **warn** (fixture market data, by design without a key) · V-08 no undefined metric shown as a value |
 | End-to-end | `docs/samples/report-sample.md` and `report-sample.html` are real outputs of the running service |
 
@@ -233,7 +233,7 @@ risk-control-analyst/
 
 **P0 — delivered**: synthetic data + validation, metric engine, risk register, scenario engine, market
 adapter, EDGAR interface design, report builder + verification, agent with guard, REST API, seven-page
-web UI, privacy scan gate, 282 tests (225 backend + 57 frontend).
+web UI, privacy scan gate, 284 tests (227 backend + 57 frontend).
 
 **P1**: Playwright end-to-end + screenshots · PDF export · docker compose verification in CI ·
 code-splitting to cut the 797 kB JS bundle · upload dry-run preview · regional budget layer.

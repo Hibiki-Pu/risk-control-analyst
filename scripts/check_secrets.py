@@ -36,6 +36,16 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+# Console safety: this gate runs on Windows terminals whose code page cannot encode
+# a typographic dash or a CJK path, so output is forced to UTF-8 and every message
+# this script prints is kept ASCII-only.
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (OSError, ValueError):  # pragma: no cover - exotic stream
+        pass
+
 #: Files we never scan for "secret shapes" (they exist to describe them).
 PATTERN_SOURCES = {
     "scripts/check_secrets.py",
@@ -94,7 +104,9 @@ class Finding:
 
     def render(self) -> str:
         location = f"{self.path}:{self.line}" if self.line else self.path
-        return f"[{self.severity.upper():5}] {self.kind:22} {location} — {self.detail}"
+        line = f"[{self.severity.upper():5}] {self.kind:22} {location} - {self.detail}"
+        # A CJK path or detail would crash a cp932/cp1252 console; escape instead.
+        return line if line.isascii() else line.encode("unicode_escape").decode("ascii")
 
 
 def _is_placeholder(value: str) -> bool:
@@ -217,11 +229,11 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:
         scanned = len(_tracked_files(args.all))
-        print(f"Privacy & secret scan — {scanned} file(s) scanned")
+        print(f"Privacy & secret scan - {scanned} file(s) scanned")
         for finding in findings:
             print(f"  {finding.render()}")
         if report["status"] == "clean":
-            print("Result: clean — no secret, no committed .env, no absolute developer path, no oversized artefact.")
+            print("Result: clean - no secret, no committed .env, no absolute developer path, no oversized artefact.")
         else:
             print(f"Result: {report['errors']} finding(s) must be fixed before publishing.")
 

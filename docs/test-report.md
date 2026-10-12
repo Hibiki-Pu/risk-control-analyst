@@ -23,9 +23,9 @@ reading.
 | --- | --- |
 | `python data/synthetic/generate.py --write` | `Generated 72 fact rows across 24 months (2023-01..2024-12)`; SHA-256 written for 4 files |
 | `python data/synthetic/generate.py --check` | `No issues found.` |
-| `python -m pytest tests -q --cov=app` | 225 collected, all passed, exit code 0, coverage 96% (`2925` statements, `113` missed) |
+| `python -m pytest tests -q --cov=app` | 227 collected, all passed, exit code 0, coverage 96% (`2925` statements, `113` missed) |
 | `python -m pytest tests -m evaluation -q` | 24 passed |
-| `python scripts/check_secrets.py` | `Privacy & secret scan — 121 file(s) scanned` → `Result: clean` |
+| `python scripts/check_secrets.py` | `Privacy & secret scan - 126 file(s) scanned` → `Result: clean` (also verified from a cp932 console, where the earlier version crashed on a non-ASCII dash) |
 | `npm run typecheck` (apps/web) | clean (`tsc --noEmit` on both tsconfigs) |
 | `npm test` (apps/web, mocked) | 5 files, 53 tests passed, 3 skipped (the two live suites skip without `VITE_API_BASE`) |
 | `VITE_API_BASE=… RCA_WRITE_SNAPSHOT=1 npm test` (apps/web, live) | 7 files, 57 tests passed — including the sweep of all seven routes against the running API |
@@ -54,12 +54,14 @@ reading.
 | 6 | `V-03` was documented but never emitted | The docstring now states that V-01 also covers citation resolution; seven checks are emitted |
 | 7 | A flaky market test depended on sub-second wall-clock timing | The TTL test now ages the cache file explicitly |
 | 8 | The P&L page compared actuals against a plan for a 24-month window (mixing two plan years), so its variance figures disagreed with the management report | The page now scopes the plan comparison to the fiscal year of the month on screen; the live sweep asserts the FY2024 revenue variance `−3.96%`, matching the report |
+| 9 | `scripts/check_secrets.py` crashed with `UnicodeEncodeError` on a cp932 console (the em dash in its own output), and would have done the same for any CJK path | Output is forced to UTF-8 and every printed line is ASCII-escaped; regression tests cover both the line renderer and a real end-to-end `main()` run |
 
 ## 5. Repository hygiene
 
 * `.gitignore` excludes `.env`, `node_modules`, `dist`, `runtime/`, caches and coverage output.
-* Secret scan: `python scripts/check_secrets.py` → `Result: clean` across 121 tracked files (credential
+* Secret scan: `python scripts/check_secrets.py` → `Result: clean` across 126 tracked files (credential
   shapes, committed `.env`, absolute developer paths, oversized artefacts). The gate is itself tested
-  (`test_security_scan.py`, 25 tests) and exits non-zero on any finding, so it can run in CI.
+  (`test_security_scan.py`, 27 tests, including ASCII-safe output on a cp932 console) and exits
+  non-zero on any finding, so it can run in CI.
 * No real company, customer or employee data exists anywhere in the repository: the dataset is generated from seed `20260101` and every response carries `synthetic: true`.
 * Reports and tool-call logs are written to `services/api/runtime/`, which is ignored by git; the copies under `docs/samples/` are intentional evidence and contain only synthetic figures.
