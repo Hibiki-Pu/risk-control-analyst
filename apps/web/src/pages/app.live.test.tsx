@@ -155,6 +155,35 @@ describe.skipIf(!liveEnabled)(`live application sweep (${LIVE_BASE})`, () => {
       }
     }
   }, 180000);
+
+  it("answers from a shareable /analyst?q= deep link", async () => {
+    renderRoute(`/analyst?q=${encodeURIComponent("我们的风险和现金状况如何？")}`);
+    try {
+      await waitFor(() => expect(bodyText()).toMatch(/RC-01/), { timeout: 30000 });
+      // A real answer: cited findings come from the deterministic engine's tool results.
+      expect(bodyText()).toMatch(/risk:register\.score/);
+      expect(bodyText()).toMatch(/deterministic-planner/);
+      for (const [label, pattern] of FAILURE_MARKERS) {
+        expect(bodyText(), `analyst deep link: ${label}`).not.toMatch(pattern);
+      }
+    } finally {
+      cleanup();
+    }
+  }, 120000);
+
+  it("generates and verifies a report from a shareable /reports?auto=1 deep link", async () => {
+    renderRoute("/reports?auto=1&months=12");
+    try {
+      await waitFor(() => expect(bodyText()).toMatch(/RCA-\d{6}-[0-9a-f]{6}/), { timeout: 40000 });
+      expect(bodyText()).toMatch(/V-01/);
+      expect(bodyText()).toMatch(/V-02/);
+      for (const [label, pattern] of FAILURE_MARKERS) {
+        expect(bodyText(), `report deep link: ${label}`).not.toMatch(pattern);
+      }
+    } finally {
+      cleanup();
+    }
+  }, 120000);
 });
 
 if (!liveEnabled) {

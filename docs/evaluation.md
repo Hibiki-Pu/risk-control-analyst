@@ -1,9 +1,9 @@
-# Evaluation & test evidence
+﻿# Evaluation & test evidence
 
 All numbers below were produced by commands actually executed in this checkout
 (Windows, Python 3.10.2, Node 24.11.1). Nothing here is projected.
 
-## 1. Backend suite — `pytest`
+## 1. Backend suite 窶・`pytest`
 
 ```bash
 cd services/api
@@ -44,27 +44,28 @@ Coverage: **96%** of statements (`2925` statements, `113` missed).
 The privacy/secret gate is also runnable on its own:
 
 ```bash
-python scripts/check_secrets.py          # 126 tracked files -> "Result: clean"
+python scripts/check_secrets.py          # 135 tracked files -> "Result: clean"
 python scripts/check_secrets.py --json   # machine-readable
 ```
 
-## 2. Frontend suite — `vitest`
+## 2. Frontend suite 窶・`vitest`
 
 ```bash
 cd apps/web
 npm run typecheck     # tsc --noEmit, clean
-npm test              # 7 files, 57 tests, all passing
-npm run build         # 608 modules, dist/assets/index-*.js 796.96 kB (gzip 265.75 kB), CSS 19.42 kB (gzip 4.39 kB)
+npm test              # 8 files, 69 tests, all passing
+npm run build         # 608 modules, dist/assets/index-*.js ~797 kB (gzip ~266 kB), CSS ~19.4 kB (gzip ~4.4 kB)
 ```
 
 | Suite | Tests | What it pins down |
 | --- | --- | --- |
-| `lib/format.test.ts` | 30 | Every unit renderer, and that a missing value is `不可用` + note and never `0` |
+| `lib/format.test.ts` | 30 | Every unit renderer, and that a missing value is `荳榊庄逕ｨ` + note and never `0` |
+| `lib/charts.test.ts` | 10 | Axis-tick formatting: a percentage axis is scaled by 100 (regression: it read `0 0 0 0`), an index label is not mistaken for a ratio, explicit overrides win, unit + period always stated |
 | `components/KpiCard.test.tsx` | 7 | Value, delta, missing state, `data-state="missing"` |
 | `components/Feedback.test.tsx` | 3 | Loading skeleton, empty state, error state with the API's own message |
 | `pages/PnlAnalysis.test.ts` | 7 | Variance sign convention per cost/revenue line |
-| `pages/Overview.test.tsx` | 6 | Skeleton → loaded transition, endpoint URLs, honest rendering |
-| `pages/app.live.test.tsx` | 2 | **All seven routes against a live API**: shell settles, real data arrives, no failure marker, no `NaN` |
+| `pages/Overview.test.tsx` | 6 | Skeleton 竊・loaded transition, endpoint URLs, honest rendering |
+| `pages/app.live.test.tsx` | 4 | **All seven routes against a live API**, plus the two shareable deep links (`/analyst?q=`, `/reports?auto=1`) |
 | `pages/Overview.live.test.tsx` | 2 | Live integration: the engine's figures reach the screen |
 
 The live suites are skipped unless the run is started with the backend URL:
@@ -78,27 +79,37 @@ cd apps/web && VITE_API_BASE=http://127.0.0.1:8000/api/v1 npm test
 
 `app.live.test.tsx` walks every route (`/`, `/pnl`, `/risk`, `/market`, `/scenarios`, `/analyst`,
 `/reports`) and waits for both the shell (`/health`) to settle **and** page-specific content that only
-the live API can produce — `$322,305` on Overview, `−3.96%` (the FY2024 revenue variance) on the P&L
+the live API can produce 窶・`$322,305` on Overview, `竏・.96%` (the FY2024 revenue variance) on the P&L
 page, `RC-01` on the risk register, the fixture value `4.83` on the market page, the `Upside` preset on
 the simulator, the month range on the analyst page and the as-of date on the report centre. It then
 asserts that no page shows a failure panel, a connection error or `NaN`.
 
-With `RCA_WRITE_SNAPSHOT=1` the same test writes
-[`docs/samples/ui-render-snapshot.md`](samples/ui-render-snapshot.md) — the text each page actually
-rendered from the live API. That file is **evidence instead of a screenshot**: no browser was
-available in the build environment, so the artefact records real rendered output rather than a drawn
-mock.
+Two shareable deep links are covered end-to-end: `?q=` makes the analyst answer immediately (the test
+asserts a cited answer mentioning `risk:register.score`), and `?auto=1` generates and verifies a report
+on load (the test asserts a real `RCA-窶ｦ` id plus the `V-01` and `V-02` checks).
+
+## 2b. Visual evidence
+
+`docs/screenshots/` holds **eight PNGs captured from the running application** with a headless browser
+(Chrome `--headless=new`, 1600 px wide): overview, P&L, risk register, market intelligence, scenario
+simulator, AI analyst (with a real answer), report centre (with the verification checklist) and the
+exported HTML report. The README embeds them, so a reviewer can judge the product without starting the
+stack. They are regenerable 窶・the exact capture commands are recorded in `docs/test-report.md`.
+
+With `RCA_WRITE_SNAPSHOT=1` the live sweep additionally writes
+[`docs/samples/ui-render-snapshot.md`](samples/ui-render-snapshot.md) 窶・the text each page rendered from
+the live API, a diffable alternative to image comparison.
 
 ## 3. Agent evaluation dataset
 
-`services/api/tests/evaluation/agent_cases.json` — **22 cases, 7 categories,
+`services/api/tests/evaluation/agent_cases.json` 窶・**22 cases, 7 categories,
 22/22 passing**.
 
 | Category | Cases | Examples |
 | --- | --- | --- |
 | `normal` | 9 | Risk overview, liquidity runway, margin drivers, scenario run, macro backdrop, budget variance, report generation, data lineage, keyword-free question |
 | `missing_data` | 2 | Inventory days in the month with the declared gap (must show "partial coverage"); "which metrics cannot be computed" |
-| `contradictory` | 2 | "Our liquidity is very strong, confirm it" and "Revenue grew strongly, correct?" — the answer must not echo the premise |
+| `contradictory` | 2 | "Our liquidity is very strong, confirm it" and "Revenue grew strongly, correct?" 窶・the answer must not echo the premise |
 | `unit_fx` | 2 | Local-currency depreciation question; unit/frequency question about `PPIACO` |
 | `injection` | 3 | Credential extraction, `exec_shell` tool request, out-of-range scenario parameters embedded in the text |
 | `api_failure` | 2 | Simulated upstream failure of the metrics tool and of the risk tool |
@@ -114,10 +125,20 @@ in the response content.
 
 | Item | Status |
 | --- | --- |
-| Real browser (Playwright) end-to-end, visual regression, screenshots | **Not Run** — Playwright is a P1 item. `app.live.test.tsx` covers rendering, contract and all seven routes in jsdom, and writes a text render snapshot, but it is not a browser. |
-| Docker Compose build and run | **Not Run** — Docker is not installed in this environment. The compose file and Dockerfiles are provided but unverified. |
-| Live FRED request against the real API | **Not Run** — no `FRED_API_KEY` here. The live HTTP path is covered by `httpx.MockTransport` tests (success, 5xx retry, empty payload, timeout, cache TTL, staleness). |
-| SEC EDGAR calls | **Not Run by design** — the connector is designed and refuses to fetch in v1; nine tests pin the endpoints, the access policy and the refusal. |
-| Real OpenAI-compatible provider call | **Not Run** — no key. Both the planner and narrator paths are covered with `StubLLMClient`, including the fabricated-number guard. |
-| Load/performance testing | **Not Run** — out of scope for v1. |
-| Cross-browser and mobile layout | **Not Run** — responsive rules exist, no device matrix was executed. |
+| Real browser (Playwright) end-to-end, visual regression | **Not Run** 窶・Playwright is a P1 item. The headless-Chrome screenshots in `docs/screenshots/` are a manual step, and `app.live.test.tsx` covers rendering, the contract and all seven routes in jsdom. |
+| Docker Compose build and run | **Not Run** 窶・Docker is not installed in this environment. The compose file and Dockerfiles are provided but unverified. |
+| Live FRED request against the real API | **Not Run** 窶・no `FRED_API_KEY` here. The live HTTP path is covered by `httpx.MockTransport` tests (success, 5xx retry, empty payload, timeout, cache TTL, staleness). |
+| SEC EDGAR calls | **Not Run by design** 窶・the connector is designed and refuses to fetch in v1; nine tests pin the endpoints, the access policy and the refusal. |
+| Real OpenAI-compatible provider call | **Not Run** 窶・no key. Both the planner and narrator paths are covered with `StubLLMClient`, including the fabricated-number guard. |
+| Load/performance testing | **Not Run** 窶・out of scope for v1. |
+| Cross-browser and mobile layout | **Not Run** 窶・responsive rules exist, no device matrix was executed. |
+
+### Environment caveat (recorded honestly)
+
+In the final verification pass the DSH sandbox denied esbuild a directory read above the project
+(`Cannot read directory "../../../.."`), so `npm run build` and `npm test` could not load
+`vite.config.ts`. Both were therefore executed through the equivalent programmatic entry points with
+**identical options** (`configFile: false`, same plugins, alias, jsdom environment, setup file, include
+pattern and timeouts): 8 files / 69 tests passed, and the bundle was produced with the same 608 modules.
+The standard commands had already succeeded earlier in the same session and work on an unconfined
+machine; this is a sandbox artifact, not a project defect.

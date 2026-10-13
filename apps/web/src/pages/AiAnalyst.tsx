@@ -8,7 +8,7 @@
  */
 
 import type { ReactElement, ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { api, errorMessage } from "@/api/client";
 import type { AgentAnswer, Evidence } from "@/api/types";
@@ -20,6 +20,7 @@ import { formatPeriod, formatValue, NOT_AVAILABLE } from "@/lib/format";
 import { cite } from "@/lib/data";
 import { useAsync } from "@/lib/useAsync";
 import { useFilters } from "@/lib/useFilters";
+import { useSearchParams } from "react-router-dom";
 
 export const CITATION_PATTERN = /\[([a-z_]+:[^\]\s]+)\]/g;
 
@@ -67,6 +68,7 @@ function engineTone(engine: string): "accent" | "info" | "warn" {
 
 export default function AiAnalyst() {
   const { latest } = useFilters();
+  const [searchParams] = useSearchParams();
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -94,6 +96,18 @@ export default function AiAnalyst() {
       setLoading(false);
     }
   };
+
+  // Shareable deep link: /analyst?q=<question> asks it immediately. Also lets the
+  // screenshot/e2e tooling capture a real answer without simulating a click.
+  const deepLinkQuestion = searchParams.get("q")?.trim() ?? "";
+  const autoAsked = useRef(false);
+  useEffect(() => {
+    if (autoAsked.current || !deepLinkQuestion || !latest) return;
+    autoAsked.current = true;
+    setQuestion(deepLinkQuestion);
+    void ask(deepLinkQuestion);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkQuestion, latest]);
 
   const evidenceColumns = [
     { key: "id", header: "引证 ID", render: (row: Evidence) => <span className="code">{row.citation_id}</span>, sortValue: (row: Evidence) => row.citation_id },

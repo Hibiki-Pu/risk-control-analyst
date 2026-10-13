@@ -31,6 +31,10 @@ export interface BuildChartArgs {
   y2AxisName?: string;
   /** Format applied inside the tooltip; defaults to a formatter derived from the unit. */
   valueFormat?: (value: number | null) => string;
+  /** Format applied to the left axis ticks; defaults to a formatter derived from `yAxisName`/unit. */
+  yAxisFormat?: (value: number) => string;
+  /** Format applied to the right axis ticks; defaults to a formatter derived from `y2AxisName`. */
+  y2AxisFormat?: (value: number) => string;
   /** Adds a note to the subtitle, e.g. which months could not be plotted. */
   note?: string;
 }
@@ -45,6 +49,27 @@ function defaultFormatter(unit: string): (value: number | null) => string {
   return (value) => (value === null ? "不可用" : formatNumber(value, 0));
 }
 
+/**
+ * Axis tick formatter derived from the axis label.
+ *
+ * Regression: the axes used to hard-code 0 decimals for the left axis and 2 for the right one, so a
+ * percentage axis (values 0.19 … 0.23) was labelled "0 0 0 0" — the numbers were right, the axis was
+ * unreadable. A percentage axis must be scaled by 100 exactly like the tooltip is.
+ */
+export function axisFormatterFor(name: string | undefined): (value: number) => string {
+  const label = (name ?? "").toLowerCase();
+  if (label.includes("%") || label.includes("比例") || label.includes("率") || label.includes("percent")) {
+    return (value: number) => formatPct(value, { decimals: 0 });
+  }
+  if (label.includes("倍") || /\bx\b/.test(label)) {
+    return (value: number) => formatNumber(value, 2);
+  }
+  if (label.includes("天") || label.includes("day")) {
+    return (value: number) => formatNumber(value, 1);
+  }
+  return (value: number) => formatNumber(value, 0);
+}
+
 /** Build a line/bar chart option that always declares its unit and period. */
 export function buildSeriesChart(args: BuildChartArgs): ChartOption {
   const periodText = formatPeriod(args.period);
@@ -52,6 +77,8 @@ export function buildSeriesChart(args: BuildChartArgs): ChartOption {
   if (args.note) subtitleParts.push(args.note);
   const base = baseChartOption(NEUTRAL_TOKENS, args.title, subtitleParts.join(" · "));
   const formatter = args.valueFormat ?? defaultFormatter(args.unit);
+  const leftAxisFormat = args.yAxisFormat ?? axisFormatterFor(args.yAxisName ?? args.unit);
+  const rightAxisFormat = args.y2AxisFormat ?? axisFormatterFor(args.y2AxisName);
 
   const option: ChartOption = {
     ...base,
@@ -67,7 +94,7 @@ export function buildSeriesChart(args: BuildChartArgs): ChartOption {
       {
         type: "value",
         name: args.yAxisName ?? args.unit,
-        axisLabel: { formatter: (value: number) => formatNumber(value, 0) },
+        axisLabel: { formatter: leftAxisFormat },
       },
       ...(args.y2AxisName
         ? [
@@ -75,7 +102,7 @@ export function buildSeriesChart(args: BuildChartArgs): ChartOption {
               type: "value" as const,
               name: args.y2AxisName,
               position: "right" as const,
-              axisLabel: { formatter: (value: number) => formatNumber(value, 2) },
+              axisLabel: { formatter: rightAxisFormat },
               splitLine: { show: false },
             },
           ]

@@ -1,4 +1,4 @@
-# Test report
+﻿# Test report
 
 Executed on Windows, Python 3.10.2, Node 24.11.1, pytest 9.0.1, Vitest 2.x.
 Every row marked **Pass** was executed in this checkout; anything not executed is
@@ -9,13 +9,13 @@ reading.
 
 | # | Requirement | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | A user can start the project from zero and load the demo data | **Pass** | `python data/synthetic/generate.py --write` → 72 fact rows; `uvicorn app.main:app` → `/api/v1/health` `status=ok`; `npm run build` → `built in 4.75s` |
+| 1 | A user can start the project from zero and load the demo data | **Pass** | `python data/synthetic/generate.py --write` 竊・72 fact rows; `uvicorn app.main:app` 竊・`/api/v1/health` `status=ok`; `npm run build` 竊・`built in 4.75s` |
 | 2 | Upload a CSV/Excel or use the seed data and see metrics and charts | **Pass** | `POST /api/v1/data/upload` activates a validated file (`test_api.py::test_upload_validates_then_activates_and_can_be_reverted`); `/api/v1/metrics`, `/api/v1/metrics/series` feed the charts; `docs/samples/metrics-2024-12.json` is a real response |
 | 3 | At least one scenario with formulas and tests where changing a parameter really changes the result | **Pass** | `test_scenarios.py` (22 tests): base case reproduces the trailing twelve months, price +5% lifts EBIT, material +8% cuts margin, DSO +20 days cuts OCF, capex changes cash but not EBIT, tornado ranking |
 | 4 | Numbers in the AI report match the calculation tools and carry sources, assumptions and period | **Pass** | `report-sample.verification.json`: V-01 111/111 citations resolved, V-02 all cited numbers reproduced, V-04 no uncited figures, V-05/V-06/V-08 pass (V-07 warns: fixture market data) |
-| 5 | Offline, missing data, wrong currency and zero denominators must not produce fake conclusions | **Pass** | `test_market.py` (fixture fallback + provenance), `test_engine.py` (zero denominator → `undefined`, missing → `missing`, partial-coverage note), `test_api.py` (no-plan upload → `status: "missing"`), evaluation cases EV-10/11/21/22 |
-| 6 | README contains architecture, screenshots, quickstart, synthetic declaration and executed tests | **Pass (render snapshot instead of screenshots)** | `README.md` covers architecture, quickstart, the synthetic declaration and the executed test results. No browser capture was possible, so `docs/samples/ui-render-snapshot.md` records the text all seven routes rendered from the live API, and `docs/samples/report-sample.html` is a real report. |
-| 7 | No keys, private data or fabricated test results in the repository | **Pass** | `python scripts/check_secrets.py` → `Result: clean` over 121 tracked files; `.env.example` values are empty; all shipped data is generated from a fixed seed. |
+| 5 | Offline, missing data, wrong currency and zero denominators must not produce fake conclusions | **Pass** | `test_market.py` (fixture fallback + provenance), `test_engine.py` (zero denominator 竊・`undefined`, missing 竊・`missing`, partial-coverage note), `test_api.py` (no-plan upload 竊・`status: "missing"`), evaluation cases EV-10/11/21/22 |
+| 6 | README contains architecture, screenshots, quickstart, synthetic declaration and executed tests | **Pass** | `README.md` is bilingual, carries three Mermaid diagrams (data flow, report verification sequence, citation-guard flow) and embeds **eight real screenshots** in `docs/screenshots/` captured from the running app with headless Chrome. |
+| 7 | No keys, private data or fabricated test results in the repository | **Pass** | `python scripts/check_secrets.py` 竊・`Result: clean` over 134 tracked files; `.env.example` values are empty; all shipped data is generated from a fixed seed. |
 
 ## 2. Commands executed (verbatim results)
 
@@ -25,19 +25,31 @@ reading.
 | `python data/synthetic/generate.py --check` | `No issues found.` |
 | `python -m pytest tests -q --cov=app` | 227 collected, all passed, exit code 0, coverage 96% (`2925` statements, `113` missed) |
 | `python -m pytest tests -m evaluation -q` | 24 passed |
-| `python scripts/check_secrets.py` | `Privacy & secret scan - 126 file(s) scanned` → `Result: clean` (also verified from a cp932 console, where the earlier version crashed on a non-ASCII dash) |
+| `python scripts/check_secrets.py` | `Privacy & secret scan - 135 file(s) scanned` 竊・`Result: clean` (also verified from a cp932 console, where the earlier version crashed on a non-ASCII dash) |
 | `npm run typecheck` (apps/web) | clean (`tsc --noEmit` on both tsconfigs) |
-| `npm test` (apps/web, mocked) | 5 files, 53 tests passed, 3 skipped (the two live suites skip without `VITE_API_BASE`) |
-| `VITE_API_BASE=… RCA_WRITE_SNAPSHOT=1 npm test` (apps/web, live) | 7 files, 57 tests passed — including the sweep of all seven routes against the running API |
-| `npm run build` (apps/web) | 608 modules; `index-*.js` 796.96 kB (gzip 265.75 kB); `index-*.css` 19.42 kB (gzip 4.39 kB); built in 4.97s |
-| `python -m uvicorn app.main:app --port 8000` + `curl` | `/health` ok; `/metrics?month=2024-12` revenue 322,304.71 USD, gross margin 0.219339, EBIT 14,290.68, cash 274,200.03, coverage 1.5618x, DSO 69.4168 days; `/risk/register` level `critical`, score 59.0, 12 signals, 3 data gaps; `/market/series/DFF` 4.83 on 2024-12-01 (`is_fixture=true`); `/market/edgar/status` `implemented=false` with the documented endpoints; `POST /scenarios/run` base/upside/downside/custom EBIT 216,098 / 367,821 / −27,152 / 290,227; `POST /agent/ask` 21 findings, 33 evidence items, tools `get_risk_signals,get_financial_metrics`; `POST /reports/generate` → `RCA-202412-9b41c8`, verification `warn` |
+| `npm test` (apps/web, mocked) | 6 files, 59 tests passed, 5 skipped (the live suites skip without `VITE_API_BASE`) |
+| `VITE_API_BASE=窶ｦ npx vitest run src/pages/app.live.test.tsx` | 4 passed 窶・all seven routes plus the `/analyst?q=` and `/reports?auto=1` deep links against the running API |
+| Node-API run of the full suite (see the caveat below) | 8 files, **69 tests passed**, 0 failed |
+| `npm run build` (apps/web) | 608 modules; `index-*.js` ~797 kB (gzip ~266 kB); `index-*.css` ~19.4 kB (gzip ~4.4 kB) |
+| `chrome --headless=new --screenshot=窶ｦ --window-size=1600,1000 <route>` | 8 screenshots written to `docs/screenshots/`; each verified by eye (the first pass exposed the percentage-axis defect recorded below) |
+| `python -m uvicorn app.main:app --port 8000` + `curl` | `/health` ok; `/metrics?month=2024-12` revenue 322,304.71 USD, gross margin 0.219339, EBIT 14,290.68, cash 274,200.03, coverage 1.5618x, DSO 69.4168 days; `/risk/register` level `critical`, score 59.0, 12 signals, 3 data gaps; `/market/series/DFF` 4.83 on 2024-12-01 (`is_fixture=true`); `/market/edgar/status` `implemented=false` with the documented endpoints; `POST /scenarios/run` base/upside/downside/custom EBIT 216,098 / 367,821 / 竏・7,152 / 290,227; `POST /agent/ask` 21 findings, 33 evidence items, tools `get_risk_signals,get_financial_metrics`; `POST /reports/generate` verification `warn` with 7 checks, 0 failures |
+
+### 2.1 Environment caveat for the web commands
+
+In the final pass the DSH sandbox denied esbuild a directory read above the project
+(`Cannot read directory "../../../..": Access is denied`), so `npm run build` / `npm test` could not
+load `vite.config.ts` even though `tsc` and a direct esbuild call both worked. Both were therefore run
+through the equivalent programmatic entry points with **identical options** (`configFile: false`, same
+React plugin, `@` alias, jsdom environment, `src/test/setup.ts`, same include pattern and timeouts):
+8 files / 69 tests passed and the bundle contains the same 608 modules. The standard commands had
+already succeeded earlier in the same session and are what the README documents for normal machines.
 
 ## 3. Not Run
 
 | Item | Reason |
 | --- | --- |
 | `docker compose up` | Docker is not installed in this environment; the compose file and Dockerfiles are provided as unverified artefacts. |
-| Playwright end-to-end / screenshots | Not installed; the jsdom live test substitutes for the rendering check only. |
+| Playwright end-to-end and an automated screenshot pipeline | Not installed; screenshots in `docs/screenshots/` were captured with headless Chrome as a manual step, and `app.live.test.tsx` covers rendering, routing and the deep links in jsdom. |
 | Live FRED call | No `FRED_API_KEY`; the live path is exercised with `httpx.MockTransport` (200, 503 + retry, empty payload, connection error) instead. |
 | Live LLM provider call | No key; planner and narrator are exercised with `StubLLMClient`, including a deliberately hallucinated figure. |
 | Load test, accessibility audit, mobile device matrix | Out of scope for v1. |
@@ -53,13 +65,34 @@ reading.
 | 5 | The budget section compared against a plan that did not exist for uploaded datasets | The section states "Plan comparison is not available" and the API returns `status: "missing"` |
 | 6 | `V-03` was documented but never emitted | The docstring now states that V-01 also covers citation resolution; seven checks are emitted |
 | 7 | A flaky market test depended on sub-second wall-clock timing | The TTL test now ages the cache file explicitly |
-| 8 | The P&L page compared actuals against a plan for a 24-month window (mixing two plan years), so its variance figures disagreed with the management report | The page now scopes the plan comparison to the fiscal year of the month on screen; the live sweep asserts the FY2024 revenue variance `−3.96%`, matching the report |
+| 8 | The P&L page compared actuals against a plan for a 24-month window (mixing two plan years), so its variance figures disagreed with the management report | The page now scopes the plan comparison to the fiscal year of the month on screen; the live sweep asserts the FY2024 revenue variance `竏・.96%`, matching the report |
 | 9 | `scripts/check_secrets.py` crashed with `UnicodeEncodeError` on a cp932 console (the em dash in its own output), and would have done the same for any CJK path | Output is forced to UTF-8 and every printed line is ASCII-escaped; regression tests cover both the line renderer and a real end-to-end `main()` run |
+| 10 | **Chart axes were unreadable for percentages**: the left axis was hard-coded to 0 decimals and the right one to 2, so a margin chart (values 竕・0.22) was labelled `0 0 0 0`. Found by looking at the first screenshot, not by a test | `axisFormatterFor()` derives the tick format from the axis label (percentage axes are scaled ﾃ・00 like the tooltip); `lib/charts.test.ts` pins it, including that an `Index 1982=100` axis is not mistaken for a ratio |
+
+## 4b. Screenshot pipeline (how the images were produced)
+
+```bash
+# 1. API + a static server that serves apps/web/dist with SPA fallback and proxies /api
+cd services/api && python -m uvicorn app.main:app --port 8000
+python <static-server-with-spa-fallback>            # 127.0.0.1:5173
+
+# 2. one screenshot per route (fresh profile each time, no cache)
+chrome --headless=new --disable-gpu --no-sandbox --hide-scrollbars \
+       --user-data-dir=<temp> --window-size=1600,1000 --virtual-time-budget=15000 \
+       --screenshot=docs/screenshots/03-risk-control.png http://127.0.0.1:5173/risk
+
+# 3. the two interactive pages use their shareable deep links
+chrome ... --screenshot=docs/screenshots/06-ai-analyst.png    "http://127.0.0.1:5173/analyst?q=謌台ｻｬ逧・｣朱勦蜥檎鴫驥醍憾蜀ｵ螯ゆｽ包ｼ・
+chrome ... --screenshot=docs/screenshots/07-report-centre.png "http://127.0.0.1:5173/reports?auto=1&months=12"
+```
+
+The deep-link parameters (`?q=` on the analyst, `?auto=1&months=` on the report centre) are a product
+feature, not a test hook: they make a page state shareable and are covered by the live test suite.
 
 ## 5. Repository hygiene
 
 * `.gitignore` excludes `.env`, `node_modules`, `dist`, `runtime/`, caches and coverage output.
-* Secret scan: `python scripts/check_secrets.py` → `Result: clean` across 126 tracked files (credential
+* Secret scan: `python scripts/check_secrets.py` 竊・`Result: clean` across 135 tracked files (credential
   shapes, committed `.env`, absolute developer paths, oversized artefacts). The gate is itself tested
   (`test_security_scan.py`, 27 tests, including ASCII-safe output on a cp932 console) and exits
   non-zero on any finding, so it can run in CI.
